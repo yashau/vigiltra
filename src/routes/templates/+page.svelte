@@ -34,14 +34,14 @@
 		</TemplateForm>
 	</header>
 
-	<div class="border-border rounded-md border">
+	<div class="border-border hidden rounded-md border md:block">
 		<Table>
 			<TableHeader>
 				<TableRow>
 					<TableHead>Name</TableHead>
 					<TableHead>Fires</TableHead>
 					<TableHead>Past expiry</TableHead>
-					<TableHead class="w-32 text-right">Actions</TableHead>
+					<TableHead class="w-32" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -99,5 +99,58 @@
 				{/each}
 			</TableBody>
 		</Table>
+	</div>
+
+	<div class="flex flex-col gap-3 md:hidden">
+		{#each data.templates as template (template.id)}
+			{@const isDefault = template.id === data.defaultTemplateId}
+			<div class="border-border bg-card flex flex-col gap-3 rounded-md border p-3">
+				<div class="flex items-start gap-2">
+					<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+						<span class="font-medium">{template.name}</span>
+						{#if template.isBuiltin}
+							<Badge variant="secondary" class="gap-1">
+								<Lock class="size-3" /> builtin
+							</Badge>
+						{/if}
+						{#if isDefault}
+							<Badge class="gap-1">
+								<Star class="size-3" /> default
+							</Badge>
+						{/if}
+					</div>
+					{#if !template.isBuiltin}
+						<div class="flex shrink-0 items-center gap-1">
+							<TemplateForm {template}>
+								{#snippet trigger()}
+									<Button variant="ghost" size="icon" aria-label="Edit">
+										<Pencil class="size-4" />
+									</Button>
+								{/snippet}
+							</TemplateForm>
+							<DeleteConfirm
+								action="?/delete"
+								title="Delete template?"
+								description="“{template.name}” will be removed. App-reg overrides that used it will fall back to the global default."
+								successMessage="Template deleted"
+								hiddenFields={{ id: template.id }}
+							>
+								{#snippet trigger()}
+									<Button variant="ghost" size="icon" aria-label="Delete">
+										<Trash2 class="size-4" />
+									</Button>
+								{/snippet}
+							</DeleteConfirm>
+						</div>
+					{/if}
+				</div>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+					<dt class="text-muted-foreground">Fires</dt>
+					<dd class="font-mono text-xs">{template.schedule.fires.join(', ')}</dd>
+					<dt class="text-muted-foreground">Past expiry</dt>
+					<dd>{template.schedule.notify_past_expiry ? 'Yes' : 'No'}</dd>
+				</dl>
+			</div>
+		{/each}
 	</div>
 </div>

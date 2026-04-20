@@ -88,20 +88,11 @@
 		});
 	});
 
-	function credBadgeVariant(row: AppRow['credentials'][number]) {
-		if (row.superseded) return 'outline' as const;
-		switch (expiryBucket(row.endDateTime)) {
-			case 'expired':
-			case 'critical':
-				return 'destructive' as const;
-			case 'warning':
-				return 'default' as const;
-			case 'soon':
-			case 'ok':
-			case 'none':
-			default:
-				return 'secondary' as const;
-		}
+	function expiryBadgeVariant(end: Date | null) {
+		const b = expiryBucket(end);
+		if (b === 'expired' || b === 'critical') return 'destructive' as const;
+		if (b === 'warning') return 'warning' as const;
+		return 'secondary' as const;
 	}
 </script>
 
@@ -144,8 +135,12 @@
 	</header>
 
 	<div class="flex flex-wrap items-center gap-2">
-		<Input placeholder="Search by name or app ID…" bind:value={search} class="max-w-xs" />
-		<div class="flex gap-1">
+		<Input
+			placeholder="Search by name or app ID…"
+			bind:value={search}
+			class="w-full sm:max-w-xs"
+		/>
+		<div class="flex flex-wrap gap-1">
 			{#each filters as f (f.value)}
 				<Button
 					variant={filter === f.value ? 'default' : 'outline'}
@@ -158,13 +153,14 @@
 		</div>
 	</div>
 
-	<div class="border-border rounded-md border">
-		<Table class="table-fixed">
+	<div class="border-border hidden rounded-md border md:block">
+		<Table class="table-fixed" containerClass="overflow-x-hidden">
 			<TableHeader>
 				<TableRow>
 					<TableHead>Application</TableHead>
 					<TableHead>Credentials</TableHead>
-					<TableHead class="w-40 text-right">Actions</TableHead>
+					<TableHead class="w-32">Expires</TableHead>
+					<TableHead class="w-40" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -199,22 +195,34 @@
 												: ''}"
 										>
 											{#if cred.kind === 'secret'}
-												<KeyRound class="text-muted-foreground size-3.5" />
+												<KeyRound class="text-muted-foreground size-3.5 shrink-0" />
 											{:else}
-												<FileBadge class="text-muted-foreground size-3.5" />
+												<FileBadge class="text-muted-foreground size-3.5 shrink-0" />
 											{/if}
-											<span class="max-w-[18rem] truncate">
+											<span class="min-w-0 truncate">
 												{cred.displayName ?? cred.hint ?? cred.keyId.slice(0, 8)}
 											</span>
 											{#if preferred}
-												<Star class="size-3 text-amber-500" aria-label="Preferred signing cert" />
+												<Star
+													class="size-3 shrink-0 text-amber-500"
+													aria-label="Preferred signing cert"
+												/>
 											{/if}
-											<Badge variant={credBadgeVariant(cred)} class="ml-auto">
-												{cred.superseded ? 'Superseded' : formatExpiry(cred.endDateTime)}
-											</Badge>
+											{#if cred.superseded}
+												<Badge variant="outline">Superseded</Badge>
+											{/if}
 										</li>
 									{/each}
 								</ul>
+							{/if}
+						</TableCell>
+						<TableCell class="align-top">
+							{#if row.soonestExpiry}
+								<Badge variant={expiryBadgeVariant(row.soonestExpiry)}>
+									{formatExpiry(row.soonestExpiry)}
+								</Badge>
+							{:else}
+								<span class="text-muted-foreground text-sm">—</span>
 							{/if}
 						</TableCell>
 						<TableCell class="text-right align-top">
@@ -245,12 +253,101 @@
 				{/each}
 				{#if filtered.length === 0}
 					<TableRow>
-						<TableCell colspan={3} class="text-muted-foreground py-8 text-center">
+						<TableCell colspan={4} class="text-muted-foreground py-8 text-center">
 							No app registrations match.
 						</TableCell>
 					</TableRow>
 				{/if}
 			</TableBody>
 		</Table>
+	</div>
+
+	<div class="flex flex-col gap-3 md:hidden">
+		{#each filtered as row (row.objectId)}
+			<div class="border-border bg-card flex flex-col gap-3 rounded-md border p-3">
+				<div class="flex items-start gap-2">
+					<div class="flex min-w-0 flex-1 flex-col gap-1">
+						<div class="flex flex-wrap items-center gap-2">
+							<span class="min-w-0 truncate font-medium">{row.displayName}</span>
+							{#if row.hasSamlSso}
+								<Badge variant="secondary" class="shrink-0 gap-1">
+									<ShieldCheck class="size-3" />
+									SAML
+								</Badge>
+							{/if}
+						</div>
+						<div class="text-muted-foreground truncate font-mono text-xs">{row.appId}</div>
+						{#if row.soonestExpiry}
+							<div>
+								<Badge variant={expiryBadgeVariant(row.soonestExpiry)}>
+									{formatExpiry(row.soonestExpiry)}
+								</Badge>
+							</div>
+						{/if}
+					</div>
+					<div class="flex shrink-0 items-center gap-1">
+						<OverrideDialog
+							objectId={row.objectId}
+							appId={row.appId}
+							displayName={row.displayName}
+							templateId={row.templateId}
+							channelOverrideIds={row.channelOverrideIds}
+							templates={data.templates}
+							channels={data.channels}
+						>
+							{#snippet trigger()}
+								<Button variant="ghost" size="icon" aria-label="Override">
+									<SlidersHorizontal class="size-4" />
+								</Button>
+							{/snippet}
+						</OverrideDialog>
+						<MonitoringToggle
+							objectId={row.objectId}
+							appId={row.appId}
+							enabled={row.monitoringEnabled}
+						/>
+					</div>
+				</div>
+				{#if row.credentials.length === 0}
+					<span class="text-muted-foreground text-sm">No credentials</span>
+				{:else}
+					<ul class="flex flex-col gap-1.5">
+						{#each row.credentials as cred (cred.keyId)}
+							{@const preferred = isPreferredSamlCert(row, cred.keyId, cred.customKeyIdentifier)}
+							<li
+								class="flex items-center gap-2 text-sm {cred.superseded
+									? 'text-muted-foreground line-through opacity-60'
+									: ''}"
+							>
+								{#if cred.kind === 'secret'}
+									<KeyRound class="text-muted-foreground size-3.5 shrink-0" />
+								{:else}
+									<FileBadge class="text-muted-foreground size-3.5 shrink-0" />
+								{/if}
+								<span class="min-w-0 truncate">
+									{cred.displayName ?? cred.hint ?? cred.keyId.slice(0, 8)}
+								</span>
+								{#if preferred}
+									<Star
+										class="size-3 shrink-0 text-amber-500"
+										aria-label="Preferred signing cert"
+									/>
+								{/if}
+								{#if cred.superseded}
+									<Badge variant="outline">Superseded</Badge>
+								{/if}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+		{/each}
+		{#if filtered.length === 0}
+			<div
+				class="border-border text-muted-foreground rounded-md border py-8 text-center text-sm"
+			>
+				No app registrations match.
+			</div>
+		{/if}
 	</div>
 </div>

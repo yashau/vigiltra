@@ -53,14 +53,14 @@
 		</ChannelForm>
 	</header>
 
-	<div class="border-border rounded-md border">
+	<div class="border-border hidden rounded-md border md:block">
 		<Table>
 			<TableHeader>
 				<TableRow>
 					<TableHead>Name</TableHead>
 					<TableHead>Type</TableHead>
 					<TableHead>Destination</TableHead>
-					<TableHead class="w-40 text-right">Actions</TableHead>
+					<TableHead class="w-40" />
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -134,5 +134,76 @@
 				{/if}
 			</TableBody>
 		</Table>
+	</div>
+
+	<div class="flex flex-col gap-3 md:hidden">
+		{#each data.channels as channel (channel.id)}
+			<div class="border-border bg-card flex flex-col gap-2 rounded-md border p-3">
+				<div class="flex items-start gap-2">
+					<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+						<span class="font-medium">{channel.name}</span>
+						<Badge variant="secondary">{channel.type}</Badge>
+					</div>
+					<div class="flex shrink-0 items-center gap-1">
+						<form
+							method="POST"
+							action="?/test"
+							use:enhance={() => {
+								setTesting(channel.id, true);
+								return async ({ result }) => {
+									setTesting(channel.id, false);
+									if (result.type === 'success') {
+										toast.success('Test message sent');
+									} else if (result.type === 'failure') {
+										toast.error(String(result.data?.error ?? 'Test failed'));
+									}
+								};
+							}}
+						>
+							<input type="hidden" name="id" value={channel.id} />
+							<Button
+								type="submit"
+								variant="ghost"
+								size="icon"
+								aria-label="Send test"
+								disabled={testing.has(channel.id)}
+							>
+								<Send class="size-4 {testing.has(channel.id) ? 'animate-pulse' : ''}" />
+							</Button>
+						</form>
+						<ChannelForm {channel}>
+							{#snippet trigger()}
+								<Button variant="ghost" size="icon" aria-label="Edit">
+									<Pencil class="size-4" />
+								</Button>
+							{/snippet}
+						</ChannelForm>
+						<DeleteConfirm
+							action="?/delete"
+							title="Delete channel?"
+							description="“{channel.name}” will be removed from any app registration overrides and the global default."
+							successMessage="Channel deleted"
+							hiddenFields={{ id: channel.id }}
+						>
+							{#snippet trigger()}
+								<Button variant="ghost" size="icon" aria-label="Delete">
+									<Trash2 class="size-4" />
+								</Button>
+							{/snippet}
+						</DeleteConfirm>
+					</div>
+				</div>
+				<div class="text-muted-foreground truncate font-mono text-xs">
+					{describe(channel)}
+				</div>
+			</div>
+		{/each}
+		{#if data.channels.length === 0}
+			<div
+				class="border-border text-muted-foreground rounded-md border py-8 text-center text-sm"
+			>
+				No channels yet. Click “New channel” to add one.
+			</div>
+		{/if}
 	</div>
 </div>

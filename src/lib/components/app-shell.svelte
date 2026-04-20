@@ -21,16 +21,16 @@
 
 <div class="bg-background text-foreground min-h-screen">
 	<header class="border-border bg-card sticky top-0 z-10 border-b">
-		<div class="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
-			<a href="/" class="flex items-center gap-2 font-semibold">
+		<div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-3 sm:gap-6 sm:px-4">
+			<a href="/" class="flex shrink-0 items-center gap-2 font-semibold">
 				<ShieldCheck class="size-5" />
-				<span>Vigiltra</span>
+				<span class="hidden sm:inline">Vigiltra</span>
 			</a>
-			<nav class="flex items-center gap-1 text-sm">
+			<nav class="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto text-sm">
 				{#each nav as item (item.href)}
 					<a
 						href={item.href}
-						class="hover:bg-accent hover:text-accent-foreground rounded-md px-3 py-1.5 transition-colors"
+						class="hover:bg-accent hover:text-accent-foreground shrink-0 rounded-md px-3 py-1.5 transition-colors"
 						class:bg-accent={isActive(item.href)}
 						class:text-accent-foreground={isActive(item.href)}
 					>
@@ -38,7 +38,7 @@
 					</a>
 				{/each}
 			</nav>
-			<div class="ml-auto flex items-center gap-2">
+			<div class="ml-auto flex shrink-0 items-center gap-2">
 				<ThemeToggle />
 			</div>
 		</div>
