@@ -1,0 +1,24 @@
+# Normalize all text files to LF in the repository.
+# Working-tree checkouts follow this too (overriding core.autocrlf).
+* text=auto eol=lf
+
+# Explicit binary types — never touch line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.mp4 binary
+*.webm binary
+*.db binary
+*.sqlite binary

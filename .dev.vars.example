@@ -1,0 +1,16 @@
+# Copy to .dev.vars for local development with `wrangler dev` / `vite dev`.
+# Secrets for production are set with `pnpm wrangler secret put <NAME>`.
+
+# Entra app registration used by the Worker to call Microsoft Graph (app-only / client credentials)
+GRAPH_TENANT_ID=
+GRAPH_CLIENT_ID=
+GRAPH_CLIENT_SECRET=
+
+# Cloudflare Access application audience tag (from the Access app config)
+# Used to verify the Cf-Access-Jwt-Assertion on incoming requests.
+ACCESS_AUD=
+ACCESS_TEAM_DOMAIN=
+
+# Shared secret the cron scheduled handler passes to /__cron.
+# Generate with: openssl rand -hex 32
+CRON_SECRET=
